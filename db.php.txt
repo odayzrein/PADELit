@@ -1,0 +1,22 @@
+<?php
+header("Content-Type: application/json; charset=UTF-8");
+
+$host = "fdb1032.awardspace.net";
+$user = "4715844_padelbooking";
+$pass = "Hussein12";
+$db   = "4715844_padelbooking";
+$port = 3306;
+
+$conn = new mysqli($host, $user, $pass, $db, $port);
+
+if ($conn->connect_error) {
+    echo json_encode([
+        "message" => "❌ Database connection failed",
+        "error" => $conn->connect_error
+    ]);
+    exit();
+}
+
+// ✅ force utf8 (important)
+$conn->set_charset("utf8");
+?>

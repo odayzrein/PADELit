@@ -1,0 +1,58 @@
+<?php
+header("Access-Control-Allow-Origin: *");
+header("Access-Control-Allow-Headers: Content-Type");
+header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
+header("Content-Type: application/json; charset=UTF-8");
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    exit(0);
+}
+
+include "db.php";
+
+$data = json_decode(file_get_contents("php://input"), true);
+
+if (!$data) {
+    echo json_encode(["message" => "❌ No data received"]);
+    exit();
+}
+
+$name = $data["name"] ?? "";
+$phone = $data["phone"] ?? "";
+$booking_type = $data["booking_type"] ?? "";
+$booking_date = $data["booking_date"] ?? "";
+$time_slot = $data["time_slot"] ?? "";
+
+if ($name == "" || $phone == "" || $booking_type == "" || $booking_date == "" || $time_slot == "") {
+    echo json_encode(["message" => "❌ All fields are required"]);
+    exit();
+}
+
+# ✅ CHECK IF SLOT ALREADY BOOKED
+$check = $conn->prepare("SELECT id FROM bookings WHERE booking_date = ? AND time_slot = ?");
+$check->bind_param("ss", $booking_date, $time_slot);
+$check->execute();
+$check->store_result();
+
+if ($check->num_rows > 0) {
+    echo json_encode(["message" => "⚠️ This time slot is already booked. Please choose another one."]);
+    $check->close();
+    $conn->close();
+    exit();
+}
+
+$check->close();
+
+# ✅ INSERT BOOKING
+$stmt = $conn->prepare("INSERT INTO bookings (name, phone, booking_type, booking_date, time_slot) VALUES (?, ?, ?, ?, ?)");
+$stmt->bind_param("sssss", $name, $phone, $booking_type, $booking_date, $time_slot);
+
+if ($stmt->execute()) {
+    echo json_encode(["message" => "✅ Booking saved successfully"]);
+} else {
+    echo json_encode(["message" => "❌ Failed to save booking"]);
+}
+
+$stmt->close();
+$conn->close();
+?>
